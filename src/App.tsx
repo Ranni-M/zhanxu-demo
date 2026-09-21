@@ -30,6 +30,7 @@ import type { Project, TemplateId } from './data';
 import { samples } from './data';
 import { api, message } from './lib/api';
 import type { User } from './lib/api';
+import { isStaticDemo, staticDemoNotice } from './lib/static-demo';
 import Home from './pages/Home';
 import Templates from './pages/Templates';
 import Works from './pages/Works';
@@ -139,6 +140,11 @@ function Application() {
     };
   }, []);
   function signIn(after?: () => void) {
+    // 静态演示版没有服务端，登录入口整体关闭，只给一句说明。
+    if (isStaticDemo) {
+      notify(staticDemoNotice);
+      return;
+    }
     pending.current = after || null;
     setAuthOpen(true);
   }
@@ -193,11 +199,25 @@ function Application() {
         <main className="container">
           <div className="empty-state auth-gate">
             <h1>为你的项目，留一个位置。</h1>
-            <p>登录后保存完整作品，发布展示页，并在不同设备继续编辑。</p>
-            <button className="button primary" onClick={() => signIn()}>
-              登录 / 注册
-              <ArrowRight size={18} />
-            </button>
+            {isStaticDemo ? (
+              <>
+                <p>
+                  这里是静态演示版，工作台需要服务端支持。完整版可以保存作品、发布展示页，并在不同设备继续编辑。
+                </p>
+                <button className="button primary" onClick={() => navigate('/')}>
+                  返回首页
+                  <ArrowRight size={18} />
+                </button>
+              </>
+            ) : (
+              <>
+                <p>登录后保存完整作品，发布展示页，并在不同设备继续编辑。</p>
+                <button className="button primary" onClick={() => signIn()}>
+                  登录 / 注册
+                  <ArrowRight size={18} />
+                </button>
+              </>
+            )}
           </div>
         </main>
       );
@@ -243,28 +263,29 @@ function Application() {
               >
                 {theme === 'light' ? <Moon size={19} /> : <Sun size={19} />}
               </button>
-              {user ? (
-                <>
-                  <button
-                    className="account-button"
-                    onClick={() => navigate('/account')}
-                    title={user.email}
-                  >
-                    {user.name.slice(0, 5)}
+              {!isStaticDemo &&
+                (user ? (
+                  <>
+                    <button
+                      className="account-button"
+                      onClick={() => navigate('/account')}
+                      title={user.email}
+                    >
+                      {user.name.slice(0, 5)}
+                    </button>
+                    <button
+                      className="icon-button signout-button"
+                      onClick={logout}
+                      aria-label="退出登录"
+                    >
+                      <SignOut size={17} />
+                    </button>
+                  </>
+                ) : (
+                  <button className="login-link" onClick={() => signIn()}>
+                    登录
                   </button>
-                  <button
-                    className="icon-button signout-button"
-                    onClick={logout}
-                    aria-label="退出登录"
-                  >
-                    <SignOut size={17} />
-                  </button>
-                </>
-              ) : (
-                <button className="login-link" onClick={() => signIn()}>
-                  登录
-                </button>
-              )}
+                ))}
               <button
                 className="button primary header-create"
                 onClick={() => start()}
@@ -382,16 +403,18 @@ function Application() {
           </div>
         </footer>
       )}
-      <AuthDialog
-        open={authOpen}
-        onOpenChange={setAuthOpen}
-        onSuccess={(next) => {
-          setUser(next);
-          const action = pending.current;
-          pending.current = null;
-          action?.();
-        }}
-      />
+      {!isStaticDemo && (
+        <AuthDialog
+          open={authOpen}
+          onOpenChange={setAuthOpen}
+          onSuccess={(next) => {
+            setUser(next);
+            const action = pending.current;
+            pending.current = null;
+            action?.();
+          }}
+        />
+      )}
       <Dialog.Root open={guide} onOpenChange={setGuide}>
         <Dialog.Portal>
           <Dialog.Overlay className="dialog-overlay" />

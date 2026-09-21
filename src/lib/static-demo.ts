@@ -8,7 +8,15 @@
 import type { Project } from '../domain/project';
 import { samples } from '../data/catalog';
 
-const enabled = import.meta.env.VITE_STATIC_DEMO === 'true';
+/**
+ * 当前构建是否为静态演示版（由 scripts/build-pages.mjs 注入 VITE_STATIC_DEMO）。
+ * 为 true 时界面隐藏登录入口，并把 /api 请求接到内置示例数据上。
+ */
+export const isStaticDemo = import.meta.env.VITE_STATIC_DEMO === 'true';
+
+/** 静态演示版里所有需要服务端的能力，统一用这句话解释。 */
+export const staticDemoNotice =
+  '这是静态演示版，没有服务端：登录、创建、上传与导出请使用完整部署版本。';
 
 /** 示例素材用的是根路径绝对地址，部署到子路径（例如 /zhanxu/）时要补上 base。 */
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -24,8 +32,6 @@ const demoProjects: Project[] = samples.map((project) => ({
   })),
 }));
 
-const offline = '这是静态演示版，没有连接服务端。登录、上传与导出请使用完整部署版本。';
-
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
     status,
@@ -34,7 +40,7 @@ const json = (status: number, body: unknown) =>
 
 /** 返回 null 表示该接口在静态演示版里没有对应数据。 */
 function route(method: string, path: string): Response | null {
-  if (method !== 'GET') return json(503, { error: offline });
+  if (method !== 'GET') return json(503, { error: staticDemoNotice });
   if (path === '/auth/me') return json(200, { user: null });
   if (path === '/bookmarks') return json(200, { ids: [] });
   if (path === '/publications') return json(200, { projects: demoProjects, nextOffset: null });
@@ -60,9 +66,9 @@ function install() {
       init?.method ?? (typeof input === 'object' && !(input instanceof URL) ? input.method : 'GET')
     ).toUpperCase();
     return Promise.resolve(
-      route(method, url.pathname.slice('/api'.length)) ?? json(503, { error: offline }),
+      route(method, url.pathname.slice('/api'.length)) ?? json(503, { error: staticDemoNotice }),
     );
   }) as typeof window.fetch;
 }
 
-if (enabled && typeof window !== 'undefined') install();
+if (isStaticDemo && typeof window !== 'undefined') install();
