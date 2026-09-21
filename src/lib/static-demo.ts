@@ -42,17 +42,16 @@ function route(method: string, path: string): Response | null {
   const slug = path.match(/^\/publications\/(.+)$/)?.[1];
   if (slug) {
     const project = demoProjects.find((item) => item.id === decodeURIComponent(slug));
-    return project ? json(200, { project }) : json(404, { error: '静态演示版只包含内置示例作品。' });
+    return project
+      ? json(200, { project })
+      : json(404, { error: '静态演示版只包含内置示例作品。' });
   }
   return null;
 }
 
 function install() {
   const nativeFetch = window.fetch.bind(window);
-  window.fetch = ((
-    input: RequestInfo | URL,
-    init?: RequestInit,
-  ): Promise<Response> => {
+  window.fetch = ((input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const raw = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
     const url = new URL(raw, window.location.origin);
     if (url.origin !== window.location.origin || !url.pathname.startsWith('/api/'))

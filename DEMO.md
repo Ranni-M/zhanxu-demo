@@ -41,8 +41,18 @@ MSYS_NO_PATHCONV=1 VITE_BASE=/zhanxu-demo/ npx vite preview --port 4173
 
 ## 自动部署
 
-`.github/workflows/pages.yml` 在 push 到 `main` 时自动构建并发布到 GitHub Pages，
-其中的 `actions/configure-pages` 带 `enablement: true`，首次运行会自动开启 Pages，不需要手动去设置里点。
+`.github/workflows/pages.yml` 在 push 到 `main` 时自动构建并发布到 GitHub Pages。
+
+> **首次需要手动开启一次 Pages。** 工作流里的 `actions/configure-pages` 虽然带了 `enablement: true`，
+> 但创建 Pages 站点要求**仓库管理员**权限，而 `GITHUB_TOKEN` 只是安装令牌，会报
+> `Resource not accessible by integration`。二选一：
+>
+> ```sh
+> # 用你自己的 gh 授权（需 repo 权限）
+> gh api -X POST repos/<owner>/<repo>/pages -f build_type=workflow
+> ```
+>
+> 或者网页上 **Settings → Pages → Source 选 GitHub Actions**。开一次之后，后续 push 全自动。
 
 ## 完整版部署
 
